@@ -1103,32 +1103,13 @@ if __name__ == "__main__":
         else:
             print(f"Failed to preload: {msg}")
 
-    https_port = args.port + 1  # HTTPS on 8081 for camera access
-
     print(f"\n{'='*50}")
     print(f"  RKLLM Web Server")
-    print(f"  HTTP:  http://0.0.0.0:{args.port}")
-    print(f"  HTTPS: https://0.0.0.0:{https_port}  (for camera)")
+    print(f"  https://0.0.0.0:{args.port}")
     print(f"{'='*50}\n")
 
-    # Run HTTPS server in a background thread for camera access
-    ssl_ctx = None
-    if os.path.exists(cert_file):
-        import ssl
-        ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        ssl_ctx.load_cert_chain(cert_file, key_file)
-
-        def run_https():
-            from werkzeug.serving import make_server
-            https_server = make_server(args.host, https_port, app, ssl_context=ssl_ctx, threaded=True)
-            https_server.serve_forever()
-
-        https_thread = threading.Thread(target=run_https, daemon=True)
-        https_thread.start()
-        print(f"HTTPS server started on port {https_port}")
-
-    # Main HTTP server
-    app.run(host=args.host, port=args.port, threaded=True, debug=False)
+    ssl_ctx = (cert_file, key_file) if os.path.exists(cert_file) else None
+    app.run(host=args.host, port=args.port, threaded=True, debug=False, ssl_context=ssl_ctx)
 
     # Cleanup on exit
     mgr.unload()
